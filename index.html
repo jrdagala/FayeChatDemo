@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Faye Chat Demo</title>
+    <link href="jQTouch/themes/css/jqtouch.css" rel="stylesheet" type="text/css" />
+    <script src="jQTouch/src/lib/jquery-1.7.min.js" type="application/x-javascript" charset="utf-8"></script>
+    <script src="jQTouch/src/jqtouch-jquery.js" type="application/x-javascript" charset="utf-8"></script>
+    <script src="jQTouch/src/jqtouch.js" type="application/x-javascript" charset="utf-8"></script>
+    <script src="Scripts/faye-browser-min.js" type="text/javascript"></script>
+    <script type="text/javascript" charset="utf-8">
+        var jQT = new $.jQTouch({
+            icon: 'jqtouch.png',
+            icon4: 'jqtouch4.png',
+            addGlossToIcon: false,
+            startupScreen: 'jqt_startup.png',
+            statusBar: 'black-translucent',
+            themeSelectionSelector: '#jqt #themes ul',
+            preloadImages: []
+        });
+    </script>
+</head>
+<body>
+  <div id="jqt">
+    <div class="current">
+        <div style="margin-bottom: 10px;">
+			<div id="chat" style="height:500px; width: 100%; background: #fff; margin: 10px;"></div>
+			<input type="text" id="textbox1" style="margin-left: 10px;margin-right: 15px;" /> <input type="Submit" value="Submit" id="Submit" />
+		</div>
+		<div id="new" class="edgetoedge" style="display: none;">
+			<form>
+				<div class="toolbar">
+					<h1>New Message</h1>
+					<a class="cancel" href="#home">Cancel</a> <a class="button disabled blueButton" id="SendMsg" href="#">Send</a>
+				</div>
+				<fieldset>
+					<ul class="rounded">
+						<li><label>To: <input type="text" name="name" id="receiver" value=""></label></li>
+						<li><label>Cc/Bcc, From:</label> <input type="text" name="bcc" id="bcc" placeholder="you@email.com"></li>
+						<li><label>Subject:</label> <input type="text" name="subject" id="subject" placeholder="you@email.com"></li>
+						<li><textarea id="email">My email</textarea></li>
+					</ul>
+				</fieldset>
+				<input type="submit" id="test1" />
+			</form>
+			<script type="text/javascript">
+				$("#SendMsg").die().live("click", function () {
+					alert("#SendMsg was clicked!");
+					var fayeClient = new Faye.Client("http://localhost:8000/faye");
+					var email = { text : null}
+					email.text = $("#receiver").val();
+					var publication1 = fayeClient.publish("/jqtouch", email);
+					publication1.callback(function () {
+						alert("Message successfully sent!");
+					});
+
+					publication1.errback(function (error) {
+						alert("An error has occured!\n" + error);
+					});
+				});
+			</script>
+		</div>
+    </div>    
+  </div>
+  <script type="text/javascript">
+      $(document).ready(function () {
+          var fayeClient = new Faye.Client("http://localhost:8000/faye");
+          var subscription = fayeClient.subscribe("/jqtouch", function (message) {
+              //append all message to #chat
+              console.log(message);
+              $("#chat").append("<p>" + message.text + "</p>");
+
+          });
+          subscription.callback(function () {
+              console.log("Subscribed!");
+          });
+          subscription.errback(function (error) {
+              console.log("An error has occured while subscribing! \n" + error);
+          });
+          $("#Submit").live("click", function () {
+              //var msg = document.getElementById("textbox1").value;
+              var msg = $("#new").html();
+              var chat = { text : null }
+              chat.text = msg;
+              var publication = fayeClient.publish("/jqtouch", chat);
+              publication.callback(function () {
+                  alert("Message successfully sent!");
+              });
+
+              publication.errback(function (error) {
+                  alert("An error has occured!\n" + error);
+              });
+          });
+      });
+  </script>
+</body>
+</html>
